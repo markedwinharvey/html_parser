@@ -3,12 +3,11 @@
 html_parser generates a hierarchical tree structure by parsing html passed to function `parse`
 '''
 #--------imports--------#
-import requests
 import string
+import sys
 #--------imports--------#
 #
 #--------define classes--------#	
- 
 class node():
 	def __init__(self,tag,attr,parent):
 		self.tag = tag 
@@ -18,13 +17,14 @@ class node():
 		self.html = []
 		
 class data_obj():
-	def __init__(self,head,body,shell,tree,node_dict,info):
+	def __init__(self,head,body,shell,tree,node_dict,info,raw):	
 		self.head = head
 		self.body = body
 		self.shell = shell
 		self.tree = tree
 		self.node_dict = node_dict
 		self.info = info		
+		self.raw = raw
 #--------define classes--------#
 #
 #--------excise head and body--------#	
@@ -50,42 +50,29 @@ def excise_head_and_body(page):
 	
 #--------excise head and body--------#		
 #
-#--------parse body--------#	
-
-def parse_body(body):
-
-	#----create tree root (body tag)----#
-	el = body[1:body.find('>')]
-	attr = el[el.find(' '):]
-	body_tree = node(tag='body',parent=None,attr=attr)	
-	curr_node_list = [body_tree]						#pointer stack for tracking parent nodes
-	
-	i = len(el)+2		#set html iterator
-	last_pointer = i	#any offset from iterator 'i' will determine 'innerHTML' content
-	#----create tree root (body tag)----#
-	#
+#--------parse section--------#	
+def parse_section(section,section_name,tree,node_dict):
 	#----definitions----#
-	
+	i = 0
+	last_pointer = i	
 	s = string.ascii_lowercase + string.ascii_uppercase 
-	node_dict = {}		#dictionary organized by html tags (each dict entry will be node list)
-	
+	curr_node_list = [tree]
 	#----definitions----#
 	#
-	#----loop over html body----#
-	
-	while i < len(body):
+	#----loop over html section----#	
+	while i < len(section):
 
-		if body[i] == '<': 
+		if section[i] == '<': 
 			
 			#----add innerHTML content, if available----#
-			html_content = body[last_pointer:i].replace('\n','').replace('\t','').replace('\r','')
+			html_content = section[last_pointer:i].replace('\n','').replace('\t','').replace('\r','')
 			if html_content:
 				curr_node_list[-1].html.append(html_content)
 			#----add innerHTML content, if available----#
 			#
 			#----handle comments----#
-			if body[i+1:i+4] == '!--': 			
-				com = body[i:body.find('-->',i)+3]
+			if section[i+1:i+4] == '!--': 			
+				com = section[i:section.find('-->',i)+3]
 				if 'comment' in node_dict.iterkeys():
 					node_dict['comment'].append(com)
 				else:
@@ -95,9 +82,10 @@ def parse_body(body):
 			#----handle comments----#
 			#
 			#----found opening tag----#
-			if body[i+1] in s:				
-				el = body[i+1:body.find('>',i)]
+			if section[i+1] in s:				
+				el = section[i+1:section.find('>',i)]
 				tag = el
+				attr=''
 				if ' ' in el:				
 					tag = el[:el.find(' ')]
 					attr = el[len(tag):].lstrip()
@@ -129,8 +117,8 @@ def parse_body(body):
 			#----found opening tag----#
 			#
 			#----found closing tag----#
-			elif body[i+1] == '/':	
-				tag = body[i+2:body.find('>',i+2)].rstrip()
+			elif section[i+1] == '/':	
+				tag = section[i+2:section.find('>',i+2)].rstrip()
 				curr_node_list.pop()
 				
 				i += (len(tag)+3)
@@ -142,26 +130,29 @@ def parse_body(body):
 			i+=1	#iterate over html content until '<'
 	#----loop over html body----#
 	
-	return body_tree,node_dict
-	
+	return tree,node_dict
 #--------parse body--------#
 #
 #--------get_info--------#
 def get_info():
 	return '''
 	#--Accessing tree data--#
-	head:  complete raw html head
-	body:  complete raw html body
-	shell: everything that is not head or body
-	tree:  tree of html element nodes
-				#--Properties of all nodes--#
-					tag:      html tag/element
-					attr:     attributes defined in html tag
-					parent:   parent node
-					children: child nodes (as list) in order
-					html:     innerHTML exclusive to each tag (no nested content), as list
-	node_dict:	tag dictionary, each dict item formulated as list of nodes	
-	  e.g. node_dict['div'] == [n1,n2,n3,n4...]
+	head:       complete raw html head
+	body:       complete raw html body
+	shell:      everything that is not head or body
+	tree:       html node-based data structure 			
+	node_dict:  dict of html tags as cumulative lists
+	info:       display this information
+	raw:        unchanged from original input
+	
+	#--Properties of all nodes--#
+		tag:      html tag/element
+		attr:     attributes defined in html tag
+		parent:   parent node
+		children: child nodes (as list) in order
+		html:     innerHTML exclusive to each tag (no nested content), as list
+
+	#--node_dict lookup:  e.g. node_dict['div'] == [node1,node2,node3,...]
 	'''.replace('\t',' ')
 #--------get_info--------#
 #
@@ -170,11 +161,15 @@ def parse(page):
 	
 	shell,head,body = excise_head_and_body(page)
 	
-	tree,node_dict = parse_body(body)
+	tree = node(tag='root',parent=None,attr=None)
+	
+	node_dict = {}
+	tree,node_dict = parse_section(head,'head',tree,node_dict)
+	tree,node_dict = parse_section(body,'body',tree,node_dict)
 	
 	info = get_info()
 
-	data = data_obj(head,body,shell,tree,node_dict,info)
+	data = data_obj(head,body,shell,tree,node_dict,info,raw=page)
 	
 	return data
 	
