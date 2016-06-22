@@ -17,7 +17,7 @@ class node():
 		self.html = []
 		
 class data_obj():
-	def __init__(self,head,body,shell,tree,node_dict,info,raw):	
+	def __init__(self,head,body,shell,tree,node_dict,info,classes,raw):	
 		self.head = head
 		self.body = body
 		self.shell = shell
@@ -25,6 +25,7 @@ class data_obj():
 		self.node_dict = node_dict
 		self.info = info		
 		self.raw = raw
+		self.classes=classes
 #--------define classes--------#
 #
 #--------excise head and body--------#	
@@ -50,8 +51,31 @@ def excise_head_and_body(page):
 	
 #--------excise head and body--------#		
 #
+#--------get classes--------#	
+def get_classes(classes,el,n):
+	#classes = class dict, el = html element attribute list, n = html node (just created)
+	#scan each el for class list and add nodes to classes dict
+	c1 = el.find('class')
+	if c1 == -1: 
+		return classes
+		
+	for i in range(c1,len(el)):
+		if el[i] == '"' or el[i] == "'":
+			c1 = i
+			quote_type = el[i]
+			break
+	class_list = el[c1+1:el.find(quote_type,c1+2)].split()
+	for c in class_list:
+		if c in classes.iterkeys():
+			classes[c].append(n)
+		else:
+			classes[c] = [n]
+	return classes
+		
+#--------get classes--------#	
+#
 #--------parse section--------#	
-def parse_section(section,section_name,tree,node_dict):
+def parse_section(section,section_name,tree,node_dict,classes):
 	#----definitions----#
 	i = 0
 	last_pointer = i	
@@ -66,7 +90,7 @@ def parse_section(section,section_name,tree,node_dict):
 			
 			#----add innerHTML content, if available----#
 			html_content = section[last_pointer:i].replace('\n','').replace('\t','').replace('\r','')
-			if html_content:
+			if html_content.replace(' ',''):
 				curr_node_list[-1].html.append(html_content)
 			#----add innerHTML content, if available----#
 			#
@@ -89,8 +113,8 @@ def parse_section(section,section_name,tree,node_dict):
 				if ' ' in el:				
 					tag = el[:el.find(' ')]
 					attr = el[len(tag):].lstrip()
-					
 				n = node(tag, attr=attr, parent=curr_node_list[-1])
+				classes = get_classes(classes,el,n)
 				curr_node_list[-1].children.append(n)
 				
 				#----handle self-closing tags (do not append to curr_node_list)----#
@@ -130,7 +154,7 @@ def parse_section(section,section_name,tree,node_dict):
 			i+=1	#iterate over html content until '<'
 	#----loop over html body----#
 	
-	return tree,node_dict
+	return tree,node_dict,classes
 #--------parse body--------#
 #
 #--------get_info--------#
@@ -144,6 +168,7 @@ def get_info():
 	node_dict:  dict of html tags as cumulative lists
 	info:       display this information
 	raw:        unchanged from original input
+	classes:    class dict, each dict entry a list of corresponding nodes
 	
 	#--Properties of all nodes--#
 		tag:      html tag/element
@@ -164,12 +189,14 @@ def parse(page):
 	tree = node(tag='root',parent=None,attr=None)
 	
 	node_dict = {}
-	tree,node_dict = parse_section(head,'head',tree,node_dict)
-	tree,node_dict = parse_section(body,'body',tree,node_dict)
+	classes = {}
+	
+	tree,node_dict,classes = parse_section(head,'head',tree,node_dict,classes)
+	tree,node_dict,classes = parse_section(body,'body',tree,node_dict,classes)
 	
 	info = get_info()
 
-	data = data_obj(head,body,shell,tree,node_dict,info,raw=page)
+	data = data_obj(head,body,shell,tree,node_dict,info,classes,raw=page)
 	
 	return data
 	
