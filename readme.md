@@ -2,21 +2,21 @@
 
 <h5>Usage</h5>
 
-`import html_parser`
-`data = html_parser.parse(doc)`
+	import html_parser
+	data = html_parser.parse(doc)
 
 where `doc` is some html text. 
 
 For instance:
 
-`import requests`
-`import html_parser`
+	import requests
+	import html_parser
 
-`url = 'https://en.wikipedia.org/wiki/Special:Random'`
-`r = requests.get(url)`
-`doc = r.text`
+	url = 'https://en.wikipedia.org/wiki/Special:Random'
+	r = requests.get(url)
+	doc = r.text
 
-`data = html_parser.parse(doc)`
+	data = html_parser.parse(doc)
 
 The data structure can be accessed via its class attributes. 
 
