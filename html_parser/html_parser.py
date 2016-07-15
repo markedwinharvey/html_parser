@@ -26,6 +26,7 @@ class data_obj():
 		self.info = info		
 		self.raw = raw
 		self.classes=classes
+		
 #--------define classes--------#
 #
 #--------excise head and body--------#	

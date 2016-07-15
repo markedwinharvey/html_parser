@@ -1,6 +1,10 @@
 <h4>html_parser</h4>
 
-<h5>Usage</h5>
+<h5>Installation:</h5>
+
+	python setup.py install
+
+<h5>Usage:</h5>
 
 	import html_parser
 	data = html_parser.parse(doc)
