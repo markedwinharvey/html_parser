@@ -1,6 +1,19 @@
 #!/usr/bin/env python
 '''
 html_parser generates a hierarchical tree structure by parsing html passed to function `parse`
+
+Usage:
+	
+	import requests
+	import html_parser as hp
+
+	url = 'https://en.wikipedia.org/wiki/Special:Random'
+	r = requests.get(url)
+	doc = r.text
+
+	data = hp.parse(doc)
+	
+
 '''
 #--------imports--------#
 import string
@@ -32,22 +45,28 @@ class data_obj():
 #--------excise head and body--------#	
 
 def excise_head_and_body(page):
-	#----get head----#
-	h1 = page.find('<head')
-	h2 = page.find('</head',h1)
-	h2 = page.find('>',h2)+1
-	head = page[h1:h2]
-	page = page[:h1]+page[h2:]	#remove head from page
-	#----get head----#
-	#
-	#----get body----#
-	b1 = page.find('<body')
-	b2 = page.find('</body',b1)
-	b2 = page.find('>',b2)+1
-	body = page[b1:b2]
-	shell = page[:b1]+page[b2:]	#remove body from page
-	#----get body----#
+	try:
+		#----get head----#
+		h1 = page.find('<head')
+		h2 = page.find('</head',h1)
+		h2 = page.find('>',h2)+1
+		head = page[h1:h2]
+		page = page[:h1]+page[h2:]	#remove head from page
+		#----get head----#
+	except:
+		head = 'NA'
 	
+	try:
+		#----get body----#
+		b1 = page.find('<body')
+		b2 = page.find('</body',b1)
+		b2 = page.find('>',b2)+1
+		body = page[b1:b2]
+		shell = page[:b1]+page[b2:]	#remove body from page
+		#----get body----#
+	except:
+		body='NA'
+		shell='NA'	
 	return shell,head,body
 	
 #--------excise head and body--------#		
@@ -76,7 +95,7 @@ def get_classes(classes,el,n):
 #--------get classes--------#	
 #
 #--------parse section--------#	
-def parse_section(section,section_name,tree,node_dict,classes):
+def parse_section(section,tree,node_dict,classes):
 	#----definitions----#
 	i = 0
 	last_pointer = i	
@@ -86,8 +105,16 @@ def parse_section(section,section_name,tree,node_dict,classes):
 	#
 	#----loop over html section----#	
 	while i < len(section):
+		#print i
+		
+		if section[i:i+2] == '<!' and section[i+2]!='-':		#ignore doctype declaration
+			i=section.find('>',i)+1
+			#i+=1
+			#print 'found'
+			continue
 
 		if section[i] == '<': 
+			#print 'yes'
 			
 			#----add innerHTML content, if available----#
 			html_content = section[last_pointer:i].replace('\n','').replace('\t','').replace('\r','')
@@ -114,7 +141,7 @@ def parse_section(section,section_name,tree,node_dict,classes):
 				if ' ' in el:				
 					tag = el[:el.find(' ')]
 					attr = el[len(tag):].lstrip()
-				n = node(tag, attr=attr, parent=curr_node_list[-1])
+				n = node(tag=tag, attr=attr, parent=curr_node_list[-1])
 				classes = get_classes(classes,el,n)
 				curr_node_list[-1].children.append(n)
 				
@@ -184,17 +211,16 @@ def get_info():
 #
 #--------parse page--------#	
 def parse(page):
-	
+
 	shell,head,body = excise_head_and_body(page)
-	
+
 	tree = node(tag='root',parent=None,attr=None)
 	
 	node_dict = {}
 	classes = {}
-	
-	tree,node_dict,classes = parse_section(head,'head',tree,node_dict,classes)
-	tree,node_dict,classes = parse_section(body,'body',tree,node_dict,classes)
-	
+
+	tree,node_dict,classes = parse_section(page,tree,node_dict,classes)
+
 	info = get_info()
 
 	data = data_obj(head,body,shell,tree,node_dict,info,classes,raw=page)
