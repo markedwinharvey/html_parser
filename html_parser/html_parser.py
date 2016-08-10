@@ -16,6 +16,7 @@ Usage:
 
 import string
 import sys
+import re
 
 
 #--------class declarations--------#	
@@ -28,9 +29,10 @@ class node():
 		self.children = []
 		self.html = []
 		self.start_idx = start_idx
+		self.content = ''
 		
 class data_obj():
-	def __init__(self,head,body,shell,tree,node_dict,info,classes,raw):	
+	def __init__(self,head,body,shell,tree,node_dict,info,classes,text_node_list,raw):	
 		self.head = head
 		self.body = body
 		self.shell = shell
@@ -39,6 +41,10 @@ class data_obj():
 		self.info = info		
 		self.raw = raw
 		self.classes=classes
+		self.text_node_list=text_node_list
+		
+	def get(self,tagname):
+		return self.node_dict[tagname]
 		
 
 #--------function declarations--------#	
@@ -88,7 +94,9 @@ def get_classes(classes,el,n):
 	return classes
 		
 
-def parse_section(section,tree,node_dict,classes):
+text_node_list_accept_tags = 'a b h1 h2 h3 h4 h5 h6 li ol p ul'.split(' ')
+
+def parse_section(section,tree,node_dict,classes,text_node_list):
 	'''parse section (html text string); track/update tree, node_dict, and classes'''
 	
 	i = 0
@@ -108,6 +116,15 @@ def parse_section(section,tree,node_dict,classes):
 			html_content = section[last_pointer:i].replace('\n','').replace('\t','').replace('\r','')
 			if html_content.replace(' ',''):
 				curr_node_list[-1].html.append(html_content)
+				
+				this_tag = curr_node_list[-1].tag
+				
+				#if this_tag 
+				#if curr_node_list[-1].tag in text_node_list_do_not_accept_tags:
+					
+				if curr_node_list[-1].tag in text_node_list_accept_tags:
+					if html_content not in ['^'] and not re.search('\[\d+\]',html_content):
+						text_node_list.append(html_content)
 			
 			#----handle comments----#
 			if section[i+1:i+4] == '!--': 			
@@ -130,6 +147,7 @@ def parse_section(section,tree,node_dict,classes):
 				n = node(tag=tag, attr=attr, parent=curr_node_list[-1],start_idx=i)
 				classes = get_classes(classes,el,n)
 				curr_node_list[-1].children.append(n)
+				#text_node_list.append(n)
 				
 				#----handle self-closing tags----#
 				for j in el[::-1]:		
@@ -153,6 +171,7 @@ def parse_section(section,tree,node_dict,classes):
 			#----found closing tag----#
 			elif section[i+1] == '/':	
 				tag = section[i+2:section.find('>',i+2)].rstrip()
+				curr_node_list[-1].content = section[curr_node_list[-1].start_idx:i+len(tag)+3]
 				curr_node_list.pop()
 				
 				i += (len(tag)+3)
@@ -163,7 +182,7 @@ def parse_section(section,tree,node_dict,classes):
 			i+=1	#iterate over html content until '<'
 	
 	
-	return tree,node_dict,classes
+	return tree,node_dict,classes,text_node_list
 
 
 #--------get_info--------#
@@ -199,12 +218,13 @@ def parse(page):
 	
 	node_dict = {}
 	classes = {}
+	text_node_list = []
 
-	tree,node_dict,classes = parse_section(page,tree,node_dict,classes)
+	tree,node_dict,classes,text_node_list = parse_section(page,tree,node_dict,classes,text_node_list)
 
 	info = get_info()
 
-	data = data_obj(head,body,shell,tree,node_dict,info,classes,raw=page)
+	data = data_obj(head,body,shell,tree,node_dict,info,classes,text_node_list,raw=page)
 	
 	return data
 	
