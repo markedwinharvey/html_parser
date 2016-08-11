@@ -19,6 +19,7 @@ import sys
 import re
 
 
+
 #--------class declarations--------#	
 
 class node():
@@ -32,7 +33,7 @@ class node():
 		self.content = ''
 		
 class data_obj():
-	def __init__(self,head,body,shell,tree,node_dict,info,classes,text_node_list,raw):	
+	def __init__(self,head,body,shell,tree,node_dict,info,classes,text_node_list,id_dict,raw):	
 		self.head = head
 		self.body = body
 		self.shell = shell
@@ -40,12 +41,24 @@ class data_obj():
 		self.node_dict = node_dict
 		self.info = info		
 		self.raw = raw
-		self.classes=classes
-		self.text_node_list=text_node_list
+		self.classes = classes
+		self.text_node_list = text_node_list
+		self.id_dict = id_dict
 		
-	def get(self,tagname):
-		return self.node_dict[tagname]
-		
+	def get(self,tags):
+		'''accepts comma-separated string of tagnames and returns all requested tags in a single list'''
+		taglist = []
+		for tagname in [x.strip() for x in tags.split(',')]:
+			if tagname:
+				for each_node in self.node_dict[tagname]:					
+					taglist.append(each_node)		
+		return taglist
+
+
+#--------data initialization--------#	
+	
+id_dict = {}
+
 
 #--------function declarations--------#	
 
@@ -94,6 +107,17 @@ def get_classes(classes,el,n):
 	return classes
 		
 
+def update_id_dict(el,n):
+	id1 = el.find('id=')
+	if id1 == -1: return
+	for i in range(id1,len(el)):
+		if el[i] == '"' or el[i] == "'":
+			id1=i
+			quote_type = el[i]
+			break
+	id = el[id1+1:el.find(quote_type,id1+2)]
+	id_dict[id] = n
+
 text_node_list_accept_tags = 'a b h1 h2 h3 h4 h5 h6 li ol p ul'.split(' ')
 
 def parse_section(section,tree,node_dict,classes,text_node_list):
@@ -124,7 +148,7 @@ def parse_section(section,tree,node_dict,classes,text_node_list):
 					
 				if curr_node_list[-1].tag in text_node_list_accept_tags:
 					if html_content not in ['^'] and not re.search('\[\d+\]',html_content):
-						text_node_list.append(html_content)
+						text_node_list.append(n)
 			
 			#----handle comments----#
 			if section[i+1:i+4] == '!--': 			
@@ -146,6 +170,15 @@ def parse_section(section,tree,node_dict,classes,text_node_list):
 					attr = el[len(tag):].lstrip()
 				n = node(tag=tag, attr=attr, parent=curr_node_list[-1],start_idx=i)
 				classes = get_classes(classes,el,n)
+				update_id_dict(el,n)
+				
+				
+				'''############################'''
+				
+				
+				
+				
+				
 				curr_node_list[-1].children.append(n)
 				#text_node_list.append(n)
 				
@@ -219,12 +252,13 @@ def parse(page):
 	node_dict = {}
 	classes = {}
 	text_node_list = []
+	
 
 	tree,node_dict,classes,text_node_list = parse_section(page,tree,node_dict,classes,text_node_list)
 
 	info = get_info()
 
-	data = data_obj(head,body,shell,tree,node_dict,info,classes,text_node_list,raw=page)
+	data = data_obj(head,body,shell,tree,node_dict,info,classes,text_node_list,id_dict,raw=page)
 	
 	return data
 	
