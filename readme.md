@@ -36,6 +36,7 @@ The data structure can be accessed via its class attributes.
 	info:       display this information
 	raw:        unchanged from original input
 	classes:    class dict, each dict entry a list of corresponding nodes
+	id_dict:	id dict, element id (dict key) matched to node
 	
 	#--Properties of all nodes--#
 		tag:      html tag/element
@@ -43,5 +44,8 @@ The data structure can be accessed via its class attributes.
 		parent:   parent node
 		children: child nodes (as list) in order
 		html:     innerHTML exclusive to each tag (no nested content), as list
+		index:    index of starting character of node, with respect to the entire document
+		content:  complete inner contents of tag (as string)
 
 	#--node_dict lookup:  e.g. node_dict['div'] == [node1,node2,node3,...]
+	#--id_dict: 				id_dict['firstHeading'] = node_n
