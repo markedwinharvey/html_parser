@@ -23,14 +23,20 @@ import re
 #--------class declarations--------#	
 
 class node():
-	def __init__(self,tag,attr,parent,start_idx):
+	def __init__(self,tag,attr,parent,index):
 		self.tag = tag 
 		self.attr = attr
 		self.parent = parent
 		self.children = []
 		self.html = []
-		self.start_idx = start_idx
+		self.index = index
 		self.content = ''
+
+class html_obj():
+	def __init__(self,content,index):
+		self.content = content
+		self.index = index
+		
 		
 class data_obj():
 	def __init__(self,head,body,shell,tree,node_dict,info,classes,text_node_list,id_dict,raw):	
@@ -139,7 +145,20 @@ def parse_section(section,tree,node_dict,classes,text_node_list):
 			#----add innerHTML content, if found, to previous tag----#
 			html_content = section[last_pointer:i].replace('\n','').replace('\t','').replace('\r','')
 			if html_content.replace(' ',''):
-				curr_node_list[-1].html.append(html_content)
+				n = node(
+					tag = 'html',
+					attr = '',
+					parent = curr_node_list[-1],
+					index = last_pointer, 
+				)
+				n.content = html_content
+				
+				
+				h = html_obj(html_content,last_pointer)
+				curr_node_list[-1].html.append(h)
+				
+				##################
+				curr_node_list[-1].children.append(n)
 				
 				this_tag = curr_node_list[-1].tag
 				
@@ -168,15 +187,16 @@ def parse_section(section,tree,node_dict,classes,text_node_list):
 				if ' ' in el:				
 					tag = el[:el.find(' ')]
 					attr = el[len(tag):].lstrip()
-				n = node(tag=tag, attr=attr, parent=curr_node_list[-1],start_idx=i)
+				
+				n = node(
+					tag=tag, 
+					attr=attr, 
+					parent=curr_node_list[-1],
+					index=i
+				)
+				
 				classes = get_classes(classes,el,n)
 				update_id_dict(el,n)
-				
-				
-				'''############################'''
-				
-				
-				
 				
 				
 				curr_node_list[-1].children.append(n)
@@ -204,7 +224,7 @@ def parse_section(section,tree,node_dict,classes,text_node_list):
 			#----found closing tag----#
 			elif section[i+1] == '/':	
 				tag = section[i+2:section.find('>',i+2)].rstrip()
-				curr_node_list[-1].content = section[curr_node_list[-1].start_idx:i+len(tag)+3]
+				curr_node_list[-1].content = section[curr_node_list[-1].index:i+len(tag)+3]
 				curr_node_list.pop()
 				
 				i += (len(tag)+3)
@@ -225,20 +245,24 @@ def get_info():
 	head:       complete raw html head
 	body:       complete raw html body
 	shell:      everything that is not head or body
-	tree:       html node-based data structure 			
+	tree:       node-based data structure 			
 	node_dict:  dict of html tags as cumulative lists
 	info:       display this information
 	raw:        unchanged from original input
 	classes:    class dict, each dict entry a list of corresponding nodes
+	id_dict:	id dict, element id (dict key) matched to node
 	
 	#--Properties of all nodes--#
-		tag:      html tag/element
-		attr:     attributes defined in html tag
+		tag:      html tag/element; the tag for innerHTML nodes is 'html'
+		attr:     attributes defined in tag (as string)
 		parent:   parent node
 		children: child nodes (as list) in order
 		html:     innerHTML exclusive to each tag (no nested content), as list
+		index:    index of starting character of node, with respect to the entire document
+		content:  complete inner contents of tag (as string)
 
-	#--node_dict lookup:  e.g. node_dict['div'] == [node1,node2,node3,...]
+	#--node_dict lookup:  e.g.  node_dict['div'] == [node1,node2,node3,...]
+	#--id_dict: 				id_dict['firstHeading'] = node_n
 	'''.replace('\t',' ')
 
 
@@ -247,7 +271,7 @@ def parse(page):
 
 	shell,head,body = excise_head_and_body(page)
 
-	tree = node(tag='root',parent=None,attr=None,start_idx='NA')
+	tree = node(tag='root',parent=None,attr=None,index='NA')
 	
 	node_dict = {}
 	classes = {}
