@@ -26,6 +26,7 @@ class node():
 	def __init__(self,tag,attr,parent,index):
 		self.tag = tag 
 		self.attr = attr
+		self.attr_dict = gen_attr_dict(attr)
 		self.parent = parent
 		self.children = []
 		self.html = []
@@ -67,6 +68,31 @@ id_dict = {}
 
 
 #--------function declarations--------#	
+
+def gen_attr_dict(attr):
+	'''takes node attributes (as html string) and returns attr_dict, which becomes class attribute for node'''
+	attr_dict = {}
+	if not attr: 
+		return attr_dict
+	attr = attr.lstrip()
+	
+	last = 0
+	i=0
+	while i < len(attr):
+		
+		if attr[i] == '=':
+			key = attr[last:i].strip()
+			quote_type = attr[i+1]
+			val_end = attr.find(quote_type,i+2)
+			val = attr[i+2:val_end]
+			last=val_end+2
+			i=last
+			attr_dict[key]=val
+		else:
+			i+=1
+			
+	return attr_dict
+			
 
 def excise_head_and_body(page):	
 	'''excise and return head and body if available'''
@@ -253,13 +279,14 @@ def get_info():
 	id_dict:	id dict, element id (dict key) matched to node
 	
 	#--Properties of all nodes--#
-		tag:      html tag/element; the tag for innerHTML nodes is 'html'
-		attr:     attributes defined in tag (as string)
-		parent:   parent node
-		children: child nodes (as list) in order
-		html:     innerHTML exclusive to each tag (no nested content), as list
-		index:    index of starting character of node, with respect to the entire document
-		content:  complete inner contents of tag (as string)
+		tag:      	html tag/element; the tag for innerHTML nodes is 'html'
+		attr:     	attributes defined in tag (as string)
+		attr_dict:	dict based on attr string
+		parent:   	parent node
+		children: 	child nodes (as list) in order
+		html:     	innerHTML exclusive to each tag (no nested content), as list
+		index:    	index of starting character of node, with respect to the entire document
+		content:  	complete inner contents of tag (as string)
 
 	#--node_dict lookup:  e.g.  node_dict['div'] == [node1,node2,node3,...]
 	#--id_dict: 				id_dict['firstHeading'] = node_n
