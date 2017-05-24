@@ -22,7 +22,7 @@ import re
 
 #--------class declarations--------#	
 
-class node():
+class node(object):
 	def __init__(self,tag,attr,parent,index):
 		self.tag = tag 
 		self.attr = attr
@@ -33,13 +33,13 @@ class node():
 		self.index = index
 		self.content = ''
 
-class html_obj():
+class html_obj(object):
 	def __init__(self,content,index):
 		self.content = content
 		self.index = index
 		
 		
-class data_obj():
+class data_obj(object):
 	def __init__(self,head,body,shell,tree,node_dict,info,classes,text_node_list,id_dict,raw):	
 		self.head = head
 		self.body = body
@@ -69,6 +69,11 @@ id_dict = {}
 
 #--------function declarations--------#	
 
+def rm_markup(text):
+	'''Remove markup tags from text input for readability'''
+	return re.sub('<.*?>','',text)
+	
+	
 def gen_attr_dict(attr):
 	'''takes node attributes (as html string) and returns attr_dict, which becomes class attribute for node'''
 	attr_dict = {}
@@ -290,6 +295,8 @@ def get_info():
 
 	#--node_dict lookup:  e.g.  node_dict['div'] == [node1,node2,node3,...]
 	#--id_dict: 				id_dict['firstHeading'] = node_n
+	
+	#-- Use rm_markup(text) to remove markup and make text readable
 	'''.replace('\t',' ')
 
 
