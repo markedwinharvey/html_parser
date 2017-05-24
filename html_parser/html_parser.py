@@ -71,7 +71,7 @@ id_dict = {}
 
 def rm_markup(text):
 	'''Remove markup tags from text input for readability'''
-	return re.sub('<.*?>','',text)
+	return re.sub('<.*?>','',text) 
 	
 	
 def gen_attr_dict(attr):
