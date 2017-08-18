@@ -270,7 +270,7 @@ def parse_section(section,tree,node_dict,classes,text_node_list):
 
 
 #--------get_info--------#
-def get_info():
+def help():
 	return '''
 	#--Accessing tree data--#
 	head:       complete raw html head
